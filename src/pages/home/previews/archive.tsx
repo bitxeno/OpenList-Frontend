@@ -9,6 +9,7 @@ import {
   HStack,
   Icon,
   useColorMode,
+  Button,
 } from "@hope-ui/solid"
 import { Motion } from "solid-motionone"
 import {
@@ -20,13 +21,22 @@ import {
   Match,
   Show,
   Switch,
+  on,
+  onMount,
+  onCleanup,
 } from "solid-js"
 import { getMainColor, local, me, OrderBy, password } from "~/store"
-import { Obj, ObjTree, UserMethods, UserPermissions } from "~/types"
+import { Obj, ObjTree, UserMethods, UserPermissions, ObjType } from "~/types"
 import { useFetch, useRouter, useT, useUtil } from "~/hooks"
 import { ListTitle } from "~/pages/home/folder/List"
 import { cols } from "~/pages/home/folder/ListItem"
-import { Error, MaybeLoading } from "~/components"
+import {
+  Error,
+  MaybeLoading,
+  ImageWithError,
+  FullLoading,
+  SelectWrapper,
+} from "~/components"
 import {
   bus,
   encodePath,
@@ -58,6 +68,7 @@ type ListItemProps = {
   innerPath: string
   url?: string
   pass: string
+  onImageClick?: () => void
 }
 
 const ListItem = (props: ListItemProps) => {
@@ -88,6 +99,8 @@ const ListItem = (props: ListItemProps) => {
         on:click={(_: MouseEvent) => {
           if (props.obj.is_dir) {
             props.jumpCallback()
+          } else if (props.obj.type === ObjType.IMAGE && props.onImageClick) {
+            props.onImageClick()
           } else if (props.url) {
             download(props.url)
           }
@@ -238,6 +251,7 @@ const Preview = () => {
   const [extractFolder, setExtractFolder] = createSignal<"" | "front" | "back">(
     "",
   )
+  const [selectedImage, setSelectedImage] = createSignal<string>("")
   const getObjsMutex = createMutex()
   const toList = (tree: ObjTree[] | Obj[]): List => {
     let l: List = {}
@@ -361,6 +375,23 @@ const Preview = () => {
     }
     return ret
   }
+  // Build inner file url for current path by filename
+  const buildInnerUrl = (name: string) => {
+    const base = raw_url
+    const hasQuery = base.includes("?")
+    const innerPath =
+      (innerPaths().length > 0 ? "/" + innerPaths().join("/") : "") + "/" + name
+    let url =
+      base + `${hasQuery ? "&" : "?"}inner=${encodePath(innerPath, true)}`
+    if (archive_pass !== "") {
+      url = url + `&pass=${encodeURIComponent(archive_pass)}`
+    }
+    if (sign !== "") {
+      url = url + `&sign=${sign}`
+    }
+    return url
+  }
+
   const sortObjs = (orderBy: OrderBy, reverse?: boolean) => {
     batch(() => {
       setExtractFolder("")
@@ -370,13 +401,50 @@ const Preview = () => {
       }
     })
   }
+
+  // Get all image files for navigation
+  const imageFiles = createMemo(() =>
+    sortedObjs().filter((obj) => !obj.is_dir && obj.type === ObjType.IMAGE),
+  )
+
+  // Keyboard navigation for images
+  const onKeydown = (e: KeyboardEvent) => {
+    if (!selectedImage()) return
+    const images = imageFiles()
+    const index = images.findIndex((f) => f.name === selectedImage())
+    if (e.key === "ArrowLeft" && index > 0) {
+      setSelectedImage(images[index - 1].name)
+    } else if (e.key === "ArrowRight" && index < images.length - 1) {
+      setSelectedImage(images[index + 1].name)
+    }
+  }
+
+  createEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!selectedImage()) return
+      const images = imageFiles()
+      const index = images.findIndex((f) => f.name === selectedImage())
+      if (e.key === "ArrowLeft" && index > 0) {
+        setSelectedImage(images[index - 1].name)
+      } else if (e.key === "ArrowRight" && index < images.length - 1) {
+        setSelectedImage(images[index + 1].name)
+      }
+    }
+    window.addEventListener("keydown", handler)
+    return () => {
+      window.removeEventListener("keydown", handler)
+    }
+  })
   return (
     <VStack spacing="$2" w="$full">
       <Breadcrumb pl="$2" pr="$2" w="$full">
         <BreadcrumbItem>
           <BreadcrumbLink
-            currentPage={innerPaths().length === 0}
-            on:click={() => setInnerPaths([])}
+            currentPage={innerPaths().length === 0 && !selectedImage()}
+            on:click={() => {
+              setInnerPaths([])
+              setSelectedImage("")
+            }}
           >
             .
           </BreadcrumbLink>
@@ -386,14 +454,27 @@ const Preview = () => {
             <BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbLink
-                currentPage={innerPaths().length === i() + 1}
-                on:click={() => setInnerPaths(innerPaths().slice(0, i() + 1))}
+                currentPage={
+                  innerPaths().length === i() + 1 && !selectedImage()
+                }
+                on:click={() => {
+                  setInnerPaths(innerPaths().slice(0, i() + 1))
+                  setSelectedImage("")
+                }}
               >
                 {name}
               </BreadcrumbLink>
             </BreadcrumbItem>
           )}
         </For>
+        <Show when={selectedImage()}>
+          <BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbLink currentPage={true}>
+              {selectedImage()}
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+        </Show>
       </Breadcrumb>
       <Switch>
         <Match when={error() !== ""}>
@@ -414,47 +495,72 @@ const Preview = () => {
           </Password>
         </Match>
         <Match when={!requiringPassword() && error() === ""}>
-          <MaybeLoading loading={loading()}>
-            <VStack class="list" w="$full" spacing="$1">
-              <ListTitle sortCallback={sortObjs} disableCheckbox />
-              <For each={sortedObjs()}>
-                {(obj, i) => {
-                  let url = undefined
-                  let innerPath =
-                    (innerPaths().length > 0
-                      ? "/" + innerPaths().join("/")
-                      : "") +
-                    "/" +
-                    obj.name
-                  if (!obj.is_dir) {
-                    const hasQuery = raw_url.includes("?")
-                    url =
-                      raw_url +
-                      `${hasQuery ? "&" : "?"}inner=${encodePath(innerPath, true)}`
-                    if (archive_pass !== "") {
-                      url = url + `&pass=${encodeURIComponent(archive_pass)}`
-                    }
-                    if (sign !== "") {
-                      url = url + `&sign=${sign}`
-                    }
-                  }
-                  return (
-                    <ListItem
-                      obj={obj}
-                      index={i()}
-                      jumpCallback={() =>
-                        setInnerPaths(innerPaths().concat(obj.name))
-                      }
-                      innerPath={innerPath}
-                      url={url}
-                      pass={archive_pass}
-                    />
-                  )
-                }}
-              </For>
-              <ContextMenu />
+          <Show
+            when={selectedImage()}
+            fallback={
+              <MaybeLoading loading={loading()}>
+                <VStack class="list" w="$full" spacing="$1">
+                  <ListTitle sortCallback={sortObjs} disableCheckbox />
+                  <For each={sortedObjs()}>
+                    {(obj, i) => {
+                      // Use buildInnerUrl to construct the URL for the object
+                      let url = !obj.is_dir
+                        ? buildInnerUrl(obj.name)
+                        : undefined
+                      let innerPath =
+                        (innerPaths().length > 0
+                          ? "/" + innerPaths().join("/")
+                          : "") +
+                        "/" +
+                        obj.name
+                      return (
+                        <ListItem
+                          obj={obj}
+                          index={i()}
+                          jumpCallback={() =>
+                            setInnerPaths(innerPaths().concat(obj.name))
+                          }
+                          innerPath={innerPath}
+                          url={url}
+                          pass={archive_pass}
+                          onImageClick={() => setSelectedImage(obj.name)}
+                        />
+                      )
+                    }}
+                  </For>
+                  <ContextMenu />
+                </VStack>
+              </MaybeLoading>
+            }
+          >
+            <VStack w="$full" spacing="$2" alignItems="center">
+              <ImageWithError
+                maxH="75vh"
+                rounded="$lg"
+                src={buildInnerUrl(selectedImage())}
+                fallback={<FullLoading />}
+                fallbackErr={<Error msg={t("home.preview.failed_load_img")} />}
+              />
+              <HStack w="$full" justifyContent="center" spacing="$2" p="$2">
+                <SelectWrapper
+                  value={selectedImage()}
+                  onChange={(value) => setSelectedImage(value)}
+                  options={imageFiles().map((img) => ({
+                    value: img.name,
+                    label: img.name,
+                  }))}
+                />
+                <Button
+                  as="a"
+                  href={buildInnerUrl(selectedImage())}
+                  target="_blank"
+                  colorScheme="accent"
+                >
+                  {t("home.preview.download")}
+                </Button>
+              </HStack>
             </VStack>
-          </MaybeLoading>
+          </Show>
         </Match>
       </Switch>
       <Show when={comment() !== ""}>
