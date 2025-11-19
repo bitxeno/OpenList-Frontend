@@ -21,9 +21,6 @@ import {
   Match,
   Show,
   Switch,
-  on,
-  onMount,
-  onCleanup,
 } from "solid-js"
 import { getMainColor, local, me, OrderBy, password } from "~/store"
 import { Obj, ObjTree, UserMethods, UserPermissions, ObjType } from "~/types"
@@ -408,17 +405,6 @@ const Preview = () => {
   )
 
   // Keyboard navigation for images
-  const onKeydown = (e: KeyboardEvent) => {
-    if (!selectedImage()) return
-    const images = imageFiles()
-    const index = images.findIndex((f) => f.name === selectedImage())
-    if (e.key === "ArrowLeft" && index > 0) {
-      setSelectedImage(images[index - 1].name)
-    } else if (e.key === "ArrowRight" && index < images.length - 1) {
-      setSelectedImage(images[index + 1].name)
-    }
-  }
-
   createEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!selectedImage()) return
