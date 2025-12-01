@@ -169,6 +169,9 @@ export const BatchRename = () => {
         })
     } else if (type() === "2") {
       let tempNum = newName()
+      const hasNumberPlaceholder =
+        srcName().includes("{number}") || srcName().includes("{episode_number}")
+
       matchNames = selectedObjs().map((obj) => {
         let suffix = ""
         const lastDotIndex = obj.name.lastIndexOf(".")
@@ -176,9 +179,23 @@ export const BatchRename = () => {
           suffix = obj.name.substring(lastDotIndex + 1)
         }
 
+        let newFileName: string
+        if (hasNumberPlaceholder) {
+          const episodeNum =
+            tempNum.length < 2 ? tempNum.padStart(2, "0") : tempNum
+          newFileName =
+            srcName()
+              .replace("{number}", tempNum)
+              .replace("{episode_number}", episodeNum) +
+            "." +
+            suffix
+        } else {
+          newFileName = srcName() + tempNum + "." + suffix
+        }
+
         const renameObj: RenameObj = {
           src_name: obj.name,
-          new_name: srcName() + tempNum + "." + suffix,
+          new_name: newFileName,
         }
         tempNum = (parseInt(tempNum) + 1)
           .toString()
