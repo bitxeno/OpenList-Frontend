@@ -34,9 +34,13 @@ export interface Preview {
   provider?: RegExp
   component: Component
   prior: Prior
+  availableInArchive?: boolean
 }
 
-export type PreviewComponent = Pick<Preview, "name" | "component">
+export type PreviewComponent = Pick<
+  Preview,
+  "name" | "component" | "availableInArchive"
+>
 
 const previews: Preview[] = [
   {
@@ -82,6 +86,7 @@ const previews: Preview[] = [
     exts: ["url"],
     component: lazy(() => import("./text-editor")),
     prior: true,
+    availableInArchive: false,
   },
   {
     name: "Image",
@@ -172,6 +177,7 @@ const previews: Preview[] = [
           !getSettingBool("share_preview_download_by_default"))
       )
     },
+    availableInArchive: false,
   },
 ]
 
@@ -197,7 +203,11 @@ export const getPreviews = (
         (typeOverride && preview.type === typeOverride) ||
         extsContains(preview.exts, file.name)
       ) {
-        const r = { name: preview.name, component: preview.component }
+        const r = {
+          name: preview.name,
+          component: preview.component,
+          availableInArchive: preview.availableInArchive,
+        }
         if (!downloadPrior && isPrior(preview.prior)) {
           res.push(r)
         } else {
@@ -244,7 +254,11 @@ export const getPreviews = (
             p.name,
           ),
         )
-        .map((p) => ({ name: p.name, component: p.component }))
+        .map((p) => ({
+          name: p.name,
+          component: p.component,
+          availableInArchive: p.availableInArchive,
+        }))
       res.push(...textPreviewsToAdd)
     }
   } else {

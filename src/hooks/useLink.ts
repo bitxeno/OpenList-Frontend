@@ -1,5 +1,5 @@
 import { objStore, selectedObjs, State, me } from "~/store"
-import { Obj } from "~/types"
+import { Obj, ArchiveObj } from "~/types"
 import {
   base_path,
   api,
@@ -30,11 +30,22 @@ export const getLinkByDirAndObj = (
   let path = `${dir}/${obj.name}`
   path = encodePath(path, encodeAll)
   let host = api
-  let prefix = isShare ? "/sd" : type === "direct" ? "/d" : "/p"
+  const { inner_path, archive } = obj as ArchiveObj
+  let prefix = isShare
+    ? "/sd"
+    : archive
+      ? "/ae"
+      : type === "direct"
+        ? "/d"
+        : "/p"
   if (type === "preview") {
     prefix = ""
     if (!api.startsWith(location.origin + base_path))
       host = location.origin + base_path
+  }
+  if (archive) {
+    path = `${dir}/${archive.name}`
+    path = encodePath(path, encodeAll)
   }
   let ans = `${host}${prefix}${path}`
   if (type !== "preview" && !isShare && obj.sign) {
@@ -45,6 +56,10 @@ export const getLinkByDirAndObj = (
     if (pwd) {
       ans += `?pwd=${pwd}`
     }
+  }
+  if (archive) {
+    let inner = `${inner_path}/${obj.name}`
+    ans += `${ans.includes("?") ? "&" : "?"}inner=${encodePath(inner, encodeAll)}`
   }
   return ans
 }
