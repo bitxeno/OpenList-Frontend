@@ -259,9 +259,9 @@ export const BatchRename = () => {
                 } else if (event === "2") {
                   setNewNameType("number")
                 }
-                // re-validate current inputs according to the newly selected type
-                handleInputSrc(srcName())
-                handleInputNew(newName())
+                // Clear validation errors when switching type
+                setValidationErrorSrc("")
+                setValidationErrorNew("")
               }}
             >
               <HStack spacing="$4">
@@ -315,6 +315,11 @@ export const BatchRename = () => {
                   }
                 }}
               />
+              <Show when={validationErrorNew()}>
+                <Text color="$danger9" fontSize="$sm">
+                  {t(`global.${validationErrorNew()}`)}
+                </Text>
+              </Show>
               <Show when={type() === "2"}>
                 <Input
                   id="modal-input3"
@@ -334,11 +339,6 @@ export const BatchRename = () => {
                     }
                   }}
                 />
-              </Show>
-              <Show when={validationErrorNew()}>
-                <Text color="$danger9" fontSize="$sm">
-                  {t(`global.${validationErrorNew()}`)}
-                </Text>
               </Show>
             </VStack>
           </ModalBody>
