@@ -37,6 +37,8 @@
       "asc": "Asc",
       "desc": "Desc"
     },
+    "page_size": "Page size",
+    "page_size-tips": "list api per page size of 115open driver",
     "refresh_token": "Refresh token",
     "root_folder_id": "Root folder id"
   },
@@ -109,6 +111,9 @@
     "cloud_id": "Cloud id",
     "custom_upload_part_size": "Custom upload part size",
     "custom_upload_part_size-tips": "0 for auto",
+    "mail_cookies": "Mail cookies",
+    "mail_cookies-tips": "Cookies from mail.139.com used for login authentication.",
+    "password": "Password",
     "report_real_size": "Report real size",
     "report_real_size-tips": "Enable to report the real file size during upload",
     "root_folder_id": "Root folder id",
@@ -122,7 +127,8 @@
     "use_large_thumbnail": "Use large thumbnail",
     "use_large_thumbnail-tips": "Enable to use large thumbnail for images",
     "user_domain_id": "User domain id",
-    "user_domain_id-tips": "ud_id in Cookie, fill in to show disk usage"
+    "user_domain_id-tips": "ud_id in Cookie, fill in to show disk usage",
+    "username": "Username"
   },
   "189Cloud": {
     "cookie": "Cookie",
@@ -195,6 +201,17 @@
     },
     "upload_thread": "Upload thread",
     "upload_thread-tips": "1\u003c=thread\u003c=32"
+  },
+  "AList V3": {
+    "forward_archive_requests": "Forward archive requests",
+    "meta_password": "Meta password",
+    "pass_ip_to_upsteam": "Pass ip to upsteam",
+    "pass_ua_to_upsteam": "Pass ua to upsteam",
+    "password": "Password",
+    "root_folder_path": "Root folder path",
+    "token": "Token",
+    "url": "Url",
+    "username": "Username"
   },
   "Alias": {
     "details_pass_through": "Details pass through",
@@ -1015,6 +1032,7 @@
     "paths": "Paths",
     "siteUrl": "SiteUrl",
     "siteUrl-tips": "The prefix URL of the strm file",
+    "withSign": "WithSign",
     "withoutUrl": "WithoutUrl",
     "withoutUrl-tips": "strm file content without URL prefix"
   },
@@ -1290,6 +1308,15 @@
     "num_folder": "Num folder",
     "root_folder_path": "Root folder path"
   },
+  "WPS": {
+    "cookie": "Cookie",
+    "mode": "Mode",
+    "modes": {
+      "Business": "Business",
+      "Personal": "Personal"
+    },
+    "root_folder_path": "Root folder path"
+  },
   "WebDav": {
     "address": "Address",
     "password": "Password",
@@ -1370,6 +1397,7 @@
     },
     "189CloudPC": {},
     "189CloudTV": {},
+    "AList V3": {},
     "Alias": {},
     "Aliyundrive": {
       "alert": "There may be an infinite loop bug in this driver.\nDeprecated, no longer maintained and will be removed in a future version.\nWe recommend using the official driver AliyundriveOpen."
@@ -1443,6 +1471,7 @@
     "USS": {},
     "UrlTree": {},
     "Virtual": {},
+    "WPS": {},
     "WebDav": {},
     "WeiYun": {},
     "WoPan": {},
@@ -1460,6 +1489,7 @@
     "189Cloud": "189Cloud",
     "189CloudPC": "189CloudPC",
     "189CloudTV": "189CloudTV",
+    "AList V3": "AList V3",
     "Alias": "Alias",
     "Aliyundrive": "Aliyundrive",
     "AliyundriveOpen": "AliyundriveOpen",
@@ -1529,6 +1559,7 @@
     "USS": "USS",
     "UrlTree": "UrlTree",
     "Virtual": "Virtual",
+    "WPS": "WPS",
     "WebDav": "WebDav",
     "WeiYun": "WeiYun",
     "WoPan": "WoPan",
