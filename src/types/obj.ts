@@ -29,6 +29,7 @@ export type StoreObj = Obj & {
 export type ArchiveObj = Obj & {
   inner_path?: string
   archive?: Obj
+  pass?: string
 }
 
 export type RenameObj = {
@@ -56,6 +57,7 @@ export type ArchiveMeta = {
 export type MountDetails = {
   total_space?: number
   free_space?: number
+  used_space?: number
   driver_name: string
 }
 
