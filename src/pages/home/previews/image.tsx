@@ -166,6 +166,8 @@ const Preview = (props: PreviewProps) => {
   const [pendingUrlSync, setPendingUrlSync] = createSignal(false)
   let fsEnterNative: (() => void) | undefined
   let fsIsNativeActive: (() => boolean) | undefined
+  let fsToggleWeb: (() => void) | undefined
+  let fsIsWebActive: (() => boolean) | undefined
 
   const handleFullscreenChange = (active: boolean) => {
     setIsFullscreen(active)
@@ -184,6 +186,8 @@ const Preview = (props: PreviewProps) => {
   }) => {
     fsEnterNative = control.enterNative
     fsIsNativeActive = control.isNativeActive
+    fsToggleWeb = control.toggleWeb
+    fsIsWebActive = control.isWebActive
   }
   const onAreaClick = () => {
     if (suppressClick) {
@@ -347,7 +351,11 @@ const Preview = (props: PreviewProps) => {
       case "w":
         return fitWidth()
       case "f":
-      // TODO toggleFs()
+        // TODO toggleFs()
+        break
+      case "Escape":
+        if (fsIsWebActive && fsIsWebActive()) fsToggleWeb?.()
+        break
     }
   }
 
