@@ -39,7 +39,7 @@ import {
   ImageWithError,
 } from "~/components"
 import { useCDN, useLink, useRouter, useT } from "~/hooks"
-import { objStore } from "~/store"
+import { objStore, setShouldKeepState } from "~/store"
 import { Obj, ObjType } from "~/types"
 import { ext, formatDate, getFileSize, loadScriptIIFE } from "~/utils"
 import lightGallery from "lightgallery"
@@ -356,6 +356,13 @@ const Preview = (props: PreviewProps) => {
     setIsFullscreen(native)
   }
 
+  // Keep the store state stable while in fullscreen so that navigating to
+  // the next/prev image (which flips objStore.state to FetchingObj) does not
+  // unmount this preview and destroy the gallery / exit fullscreen.
+  createEffect(() => {
+    setShouldKeepState(isFullscreen())
+  })
+
   onMount(() => {
     window.addEventListener("keydown", onKey)
     areaRef?.addEventListener("wheel", onWheel, { passive: false })
@@ -363,6 +370,7 @@ const Preview = (props: PreviewProps) => {
     updateFullscreen()
   })
   onCleanup(() => {
+    setShouldKeepState(false)
     window.removeEventListener("keydown", onKey)
     areaRef?.removeEventListener("wheel", onWheel)
     document.removeEventListener("fullscreenchange", updateFullscreen)
