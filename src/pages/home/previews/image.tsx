@@ -38,9 +38,17 @@ import {
   ImageWithError,
 } from "~/components"
 import { useCDN, useRouter, useT } from "~/hooks"
-import { objStore } from "~/store"
+import { ObjStore, objStore, password } from "~/store"
 import { Obj, ObjType } from "~/types"
-import { ext, formatDate, getFileSize, loadScriptIIFE } from "~/utils"
+import {
+  ext,
+  formatDate,
+  getFileSize,
+  loadScriptIIFE,
+  pathDir,
+  pathJoin,
+} from "~/utils"
+import { fsGet } from "~/utils/api"
 
 const HEIF_EXTS = new Set(["heic", "heif", "avif", "vvc", "avc"])
 const isHeif = (name: string) => HEIF_EXTS.has(ext(name))
@@ -142,7 +150,7 @@ const HeifView = (props: {
 // ── Preview ─────────────────────────────────────────────────────────
 const Preview = (props: PreviewProps) => {
   const t = useT()
-  const { replace } = useRouter()
+  const { replace, pathname } = useRouter()
 
   const [scale, setScale] = createSignal(1)
   const [rotation, setRotation] = createSignal(0)
@@ -155,6 +163,7 @@ const Preview = (props: PreviewProps) => {
   const [showInfo, setShowInfo] = createSignal(false)
   const [imgSize, setImgSize] = createSignal({ w: 0, h: 0 })
   const [isFullscreen, setIsFullscreen] = createSignal(false)
+  const [pendingUrlSync, setPendingUrlSync] = createSignal(false)
 
   let containerRef!: HTMLDivElement
   let areaRef!: HTMLDivElement
@@ -181,9 +190,25 @@ const Preview = (props: PreviewProps) => {
   })
 
   // ── navigation ──
+  const navigateInPlace = async (obj: Obj) => {
+    try {
+      const path = pathJoin(pathDir(pathname()), obj.name)
+      const resp = await fsGet(path, password())
+      if (resp.code === 200 && resp.data) {
+        ObjStore.setObj(resp.data)
+        ObjStore.setRawUrl(resp.data.raw_url)
+        setPendingUrlSync(true)
+      }
+    } catch (e) {
+      console.error("navigate in place failed", e)
+    }
+  }
   const goTo = (obj: Obj) => {
-    if (props.navigate) props.navigate(obj.name)
-    else replace(obj.name)
+    if (props.navigate) return props.navigate(obj.name)
+    if (isFullscreen())
+      // 全屏时就地换图，避免路由重渲染销毁全屏 DOM 节点
+      return void navigateInPlace(obj)
+    replace(obj.name)
   }
   const prev = () => {
     const i = curIdx()
@@ -299,6 +324,11 @@ const Preview = (props: PreviewProps) => {
   const updateFullscreen = () => {
     const native = !!document.fullscreenElement
     setIsFullscreen(native)
+    // 退出全屏时，把 URL 同步到当前图片
+    if (!native && pendingUrlSync()) {
+      setPendingUrlSync(false)
+      replace(objStore.obj.name)
+    }
   }
 
   onMount(() => {
