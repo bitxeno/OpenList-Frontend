@@ -25,6 +25,7 @@ import {
   mergeProps,
   Show,
   JSXElement,
+  createEffect,
   createSignal,
   onMount,
   onCleanup,
@@ -76,12 +77,24 @@ export const Error = (props: {
 }
 
 export const BoxWithFullScreen = (
-  props: Parameters<typeof Box>[0] & { extraButtons?: JSXElement },
+  props: Parameters<typeof Box>[0] & {
+    extraButtons?: JSXElement
+    onFullscreenChange?: (active: boolean) => void
+    fullscreenControl?: (control: {
+      toggleWeb: () => void
+      isWebActive: () => boolean
+      enterNative: () => void
+      exitNative: () => void
+      isNativeActive: () => boolean
+    }) => void
+  },
 ) => {
   const { isOpen: isFullView, onToggle } = createDisclosure()
   const [isFullScreen, setIsFullScreen] = createSignal(false)
   let containerRef: HTMLDivElement
   const t = useT()
+
+  const isFullscreenActive = () => isFullView() || isFullScreen()
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -97,6 +110,20 @@ export const BoxWithFullScreen = (
     onCleanup(() => {
       document.removeEventListener("fullscreenchange", fsHandler)
     })
+    props.fullscreenControl?.({
+      toggleWeb: onToggle,
+      isWebActive: isFullView,
+      enterNative: () => {
+        if (!document.fullscreenElement) containerRef!.requestFullscreen()
+      },
+      exitNative: () => document.exitFullscreen(),
+      isNativeActive: () => !!document.fullscreenElement,
+    })
+  })
+
+  // 通知父组件当前全屏状态（网页全屏或原生全屏）
+  createEffect(() => {
+    props.onFullscreenChange?.(isFullscreenActive())
   })
 
   return (

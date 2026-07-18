@@ -164,6 +164,34 @@ const Preview = (props: PreviewProps) => {
   const [imgSize, setImgSize] = createSignal({ w: 0, h: 0 })
   const [isFullscreen, setIsFullscreen] = createSignal(false)
   const [pendingUrlSync, setPendingUrlSync] = createSignal(false)
+  let fsEnterNative: (() => void) | undefined
+  let fsIsNativeActive: (() => boolean) | undefined
+
+  const handleFullscreenChange = (active: boolean) => {
+    setIsFullscreen(active)
+    // 退出全屏时，把 URL 同步到当前图片
+    if (!active && pendingUrlSync()) {
+      setPendingUrlSync(false)
+      replace(objStore.obj.name)
+    }
+  }
+  const handleFullscreenControl = (control: {
+    toggleWeb: () => void
+    isWebActive: () => boolean
+    enterNative: () => void
+    exitNative: () => void
+    isNativeActive: () => boolean
+  }) => {
+    fsEnterNative = control.enterNative
+    fsIsNativeActive = control.isNativeActive
+  }
+  const onAreaClick = () => {
+    if (suppressClick) {
+      suppressClick = false
+      return
+    }
+    if (fsIsNativeActive && !fsIsNativeActive()) fsEnterNative?.()
+  }
 
   let containerRef!: HTMLDivElement
   let areaRef!: HTMLDivElement
@@ -265,7 +293,9 @@ const Preview = (props: PreviewProps) => {
   }
 
   // ── drag ──
+  let suppressClick = false
   const onMouseDown = (e: MouseEvent) => {
+    suppressClick = false
     if (scale() <= 1 || e.button !== 0) return
     e.preventDefault()
     setDragging(true)
@@ -276,6 +306,7 @@ const Preview = (props: PreviewProps) => {
   }
   const onMouseMove = (e: MouseEvent) => {
     if (!dragging()) return
+    suppressClick = true
     setTx(startTx + (e.clientX - dragOX))
     setTy(startTy + (e.clientY - dragOY))
   }
@@ -320,27 +351,15 @@ const Preview = (props: PreviewProps) => {
     }
   }
 
-  // ── fullscreen detection ──
-  const updateFullscreen = () => {
-    const native = !!document.fullscreenElement
-    setIsFullscreen(native)
-    // 退出全屏时，把 URL 同步到当前图片
-    if (!native && pendingUrlSync()) {
-      setPendingUrlSync(false)
-      replace(objStore.obj.name)
-    }
-  }
+  // ── fullscreen state 由 BoxWithFullScreen 通过 onFullscreenChange 上报 ──
 
   onMount(() => {
     window.addEventListener("keydown", onKey)
     areaRef?.addEventListener("wheel", onWheel, { passive: false })
-    document.addEventListener("fullscreenchange", updateFullscreen)
-    updateFullscreen()
   })
   onCleanup(() => {
     window.removeEventListener("keydown", onKey)
     areaRef?.removeEventListener("wheel", onWheel)
-    document.removeEventListener("fullscreenchange", updateFullscreen)
   })
 
   const imgTransform = () =>
@@ -350,7 +369,12 @@ const Preview = (props: PreviewProps) => {
 
   // ── render ──────────────────────────────────────────────────────
   return (
-    <BoxWithFullScreen w="$full" h="70vh">
+    <BoxWithFullScreen
+      w="$full"
+      h="70vh"
+      onFullscreenChange={handleFullscreenChange}
+      fullscreenControl={handleFullscreenControl}
+    >
       <VStack ref={containerRef} w="$full" h="$full">
         {/* ── Toolbar ── */}
         <Flex
@@ -498,6 +522,7 @@ const Preview = (props: PreviewProps) => {
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
           onMouseLeave={onMouseUp}
+          onClick={onAreaClick}
           onDblClick={onDblClick}
         >
           <Center
