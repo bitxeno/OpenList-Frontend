@@ -52,7 +52,7 @@ import "lightgallery/css/lightgallery-bundle.css"
 import { LightGallery } from "lightgallery/lightgallery"
 
 const HEIF_EXTS = new Set(["heic", "heif", "avif", "vvc", "avc"])
-const isHeif = (name: string) => HEIF_EXTS.has(ext(name))
+const isHeif = (name: string) => HEIF_EXTS.has(ext(name).toLowerCase())
 const ZOOM_MIN = 0.1
 const ZOOM_MAX = 10
 const ZOOM_WHEEL_FACTOR = 1.08
