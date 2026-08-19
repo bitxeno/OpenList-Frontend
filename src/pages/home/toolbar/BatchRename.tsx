@@ -191,20 +191,23 @@ export const BatchRename = () => {
     } else if (type() === "2") {
       let tempNum = newName()
       const hasNumberPlaceholder = srcName().includes("{number}")
+      const hasNamePlaceholder = srcName().includes("{name}")
       const paddingLength = parseInt(paddingZeros()) || 0
 
       matchNames = selectedObjs().map((obj) => {
         const lastDotIndex = obj.name.lastIndexOf(".")
         const suffix =
           lastDotIndex !== -1 ? obj.name.substring(lastDotIndex) : ""
+        const baseName =
+          lastDotIndex !== -1 ? obj.name.substring(0, lastDotIndex) : obj.name
         const paddedNum =
           paddingLength > 0 ? tempNum.padStart(paddingLength, "0") : tempNum
 
-        let newFileName: string
+        let newFileName = srcName().replaceAll("{name}", baseName)
         if (hasNumberPlaceholder) {
-          newFileName = srcName().replace("{number}", paddedNum) + suffix
+          newFileName = newFileName.replace("{number}", paddedNum) + suffix
         } else {
-          newFileName = srcName() + paddedNum + suffix
+          newFileName = newFileName + paddedNum + suffix
         }
 
         const renameObj: RenameObj = {
